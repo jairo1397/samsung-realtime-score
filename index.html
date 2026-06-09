@@ -129,44 +129,12 @@
         .azul-hole { background-color: transparent; box-shadow: 0 0 0 300vmax #0000CD; opacity: 0; }
 
         /* Clases activas cuando hay gol */
-        .is-goal .gol-overlay { animation: showGoal 7s linear forwards; animation-delay: var(--delay, 0ms); }
-        .is-goal .celeste-solid { animation: solidCeleste 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
-        .is-goal .celeste-hole { animation: holeCeleste 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
-        .is-goal .azul-solid { animation: solidAzul 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
-        .is-goal .azul-hole { animation: holeAzul 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
-
-        /* Keyframes del gol */
-        @keyframes showGoal {
-            0% { opacity: 0; }
-            43.28% { opacity: 0; } /* 3.03s (3030 / 7000) */
-            50.00% { opacity: 1; } /* Termina el fade in suave */
-            88.14% { opacity: 1; } /* 6.17s (6170 / 7000) Empieza la transición */
-            92.14% { opacity: 0; } /* Se desvanece mientras la transición azul lo cubre */
-            100% { opacity: 0; }
+        .is-goal .gol-overlay,
+        .is-goal .gol-pill-overlay {
+            opacity: 1 !important;
         }
-
-        /* KEYFRAMES CELESTE */
-        @keyframes solidCeleste {
-            0%, 88.13% { width: 0; height: 0; opacity: 1; } /* Inicia en 6.17s */
-            90.71%, 94.27% { width: 300vmax; height: 300vmax; opacity: 1; }
-            94.28%, 100% { width: 300vmax; height: 300vmax; opacity: 0; }
-        }
-        @keyframes holeCeleste {
-            0%, 94.27% { width: 0; height: 0; opacity: 0; }
-            94.28% { width: 0; height: 0; opacity: 1; }
-            98.57%, 100% { width: 300vmax; height: 300vmax; opacity: 1; }
-        }
-
-        /* KEYFRAMES AZUL */
-        @keyframes solidAzul {
-            0%, 89.56% { width: 0; height: 0; opacity: 1; }
-            92.14% { width: 300vmax; height: 300vmax; opacity: 1; }
-            92.15%, 100% { width: 300vmax; height: 300vmax; opacity: 0; }
-        }
-        @keyframes holeAzul {
-            0%, 92.14% { width: 0; height: 0; opacity: 0; }
-            92.15% { width: 0; height: 0; opacity: 1; } 
-            96.42%, 100% { width: 300vmax; height: 300vmax; opacity: 1; } 
+        .is-goal .transition-container {
+            display: none !important;
         }
 
         /* Contenedor de equipos en la esquina superior izquierda (Modo Conteo) */
@@ -370,18 +338,29 @@
             pointer-events: none;
         }
 
-        .is-goal .gol-pill-overlay {
-            animation: showGoal 7s linear forwards;
-            animation-delay: var(--delay, 0ms);
+
+
+        .gol-title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5vw;
+        }
+
+        .gol-flag {
+            width: 8vw;
+            height: 5.5vw;
+            object-fit: cover;
+            display: none;
         }
 
         .gol-title {
             font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
-            font-size: 2vw;
+            font-size: 7vw;
             font-weight: normal;
             letter-spacing: 0.5px;
             margin: 0;
-            line-height: 1.1;
+            line-height: 1;
             text-transform: uppercase;
         }
 
@@ -447,7 +426,10 @@
 
         <!-- Overlay para el texto/datos del gol en la plantilla -->
         <div class="gol-pill-overlay" id="gol-pill-overlay">
-            <div class="gol-title" id="gol-title">¡GOL!</div>
+            <div class="gol-title-container" id="gol-title-container">
+                <img class="gol-flag" id="gol-flag" src="" alt="Bandera">
+                <div class="gol-title" id="gol-title">¡GOL!</div>
+            </div>
             <div class="gol-scorer" id="gol-scorer"></div>
         </div>
 
@@ -752,7 +734,7 @@
                 let isHiddenGoal = false;
 
                 // Si teníamos un marcador anterior guardado y el nuevo es MAYOR, hubo gol mientras no estábamos
-                if (savedHome !== null && savedAway !== null && (nuevoHome > savedHome || nuevoAway > savedAway)) {
+                if (savedHome !== null && savedAway !== null && (nuevoHome > savedHome || nuevoAway > savedAway) && (nuevoHome >= 1 || nuevoAway >= 1)) {
                     isHiddenGoal = true;
                     currentHomeScore = savedHome;
                     currentAwayScore = savedAway;
@@ -772,7 +754,7 @@
                 // Si detectamos un gol offline, calculamos el tiempo y lo disparamos
                 if (isHiddenGoal) {
                     const elapsed = Date.now() - pageLoadTime;
-                    triggerGoalAnimation(nuevoHome, nuevoAway, elapsed, partido.goles);
+                    triggerGoalAnimation(nuevoHome, nuevoAway, elapsed, partido);
                 }
                 
                 // Iniciar el chequeo de goles cada segundo
@@ -781,7 +763,7 @@
         }
 
         // Función para activar visualmente el gol sincronizado
-        function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, goles = []) {
+        function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, partido = null) {
             console.log(`¡GOL DETECTADO! Sincronizando animación con retraso de ${timeElapsed}ms...`);
             
             currentHomeScore = newHomeScore;
@@ -790,11 +772,33 @@
             // Mostrar el goleador en el overlay
             const golTitle = document.getElementById('gol-title');
             const golScorer = document.getElementById('gol-scorer');
+            const golFlag = document.getElementById('gol-flag');
             
-            if (goles && goles.length > 0) {
-                const ultimoGol = goles[goles.length - 1];
+            if (partido && partido.goles && partido.goles.length > 0) {
+                const ultimoGol = partido.goles[partido.goles.length - 1];
                 const teamShort = getShortName(ultimoGol.equipo, ultimoGol.codigo_iso || ultimoGol.equipo_codigo);
-                golTitle.innerText = `¡GOL DE ${teamShort}!`;
+                
+                // Buscar la bandera correspondiente en base al nombre o código
+                let flagUrl = "";
+                if (partido.local && partido.visitante) {
+                    const equipoLocal = partido.local;
+                    const equipoVisitante = partido.visitante;
+                    
+                    if (getShortName(equipoLocal.nombre, equipoLocal.codigo_iso) === teamShort || ultimoGol.equipo === equipoLocal.nombre) {
+                        flagUrl = equipoLocal.bandera_url || equipoLocal.logo || equipoLocal.bandera;
+                    } else if (getShortName(equipoVisitante.nombre, equipoVisitante.codigo_iso) === teamShort || ultimoGol.equipo === equipoVisitante.nombre) {
+                        flagUrl = equipoVisitante.bandera_url || equipoVisitante.logo || equipoVisitante.bandera;
+                    }
+                }
+
+                if (flagUrl) {
+                    golFlag.src = flagUrl;
+                    golFlag.style.display = 'block';
+                } else {
+                    golFlag.style.display = 'none';
+                }
+
+                golTitle.innerText = teamShort;
                 
                 if (ultimoGol.jugador) {
                     const minStr = ultimoGol.minuto_texto || `${ultimoGol.minuto}'`;
@@ -803,22 +807,19 @@
                     golScorer.innerText = "";
                 }
             } else {
+                if (golFlag) golFlag.style.display = 'none';
                 golTitle.innerText = "¡GOL!";
                 golScorer.innerText = "";
             }
 
-            // Adelantar toda la animación CSS usando un delay negativo igual al tiempo transcurrido
-            container.style.setProperty('--delay', `-${timeElapsed}ms`);
-
-            // Reproducir toda la animación CSS agregando la clase 'is-goal' al contenedor
+            // Mostrar la pantalla de gol estática
             container.classList.add('is-goal');
 
-            // Actualizar el DOM exactamente a los 3500ms del tiempo global del anuncio
-            const domUpdateWait = Math.max(0, 3500 - timeElapsed);
+            // Actualizar el DOM con un ligero retraso para que cambie cuando la pantalla de gol ya esté visible
             setTimeout(() => {
                 document.getElementById('home-score').innerText = newHomeScore;
                 document.getElementById('away-score').innerText = newAwayScore;
-            }, domUpdateWait);
+            }, 500);
         }
 
         // --- POLLING PARA MODO CONTEO REGRESIVO (Cada 1 minuto) ---
@@ -874,12 +875,12 @@
                         const nuevoAway = parseInt(partido.marcador.visitante) || 0;
 
                         // Si alguno de los puntajes es mayor al que teníamos guardado, ¡hubo un gol en vivo!
-                        if (nuevoHome > currentHomeScore || nuevoAway > currentAwayScore) {
+                        if ((nuevoHome > currentHomeScore || nuevoAway > currentAwayScore) && (nuevoHome >= 1 || nuevoAway >= 1)) {
                             const timeElapsed = Date.now() - pageLoadTime;
 
                             // Si estamos dentro de los primeros 3.03s (3030ms) de mostrar la página, lanzamos la animación
                             if (timeElapsed <= 3030) {
-                                triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido.goles);
+                                triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido);
                                 localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
                                 localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
                             } else {
