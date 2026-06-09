@@ -192,15 +192,12 @@
             width: 5.5vw;
             height: 3.6vw;
             object-fit: cover;
-            border-radius: 3px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
         }
 
         .team-name-text {
             font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
             font-size: 4.8vw;
             font-weight: normal;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
         }
 
         .vs-row {
@@ -209,7 +206,6 @@
             font-weight: normal;
             margin-left: 9vw; /* Alineado para sentarse bajo el espacio flag-name */
             text-transform: lowercase;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             line-height: 1;
             margin-top: -0.3vh;
             margin-bottom: -0.3vh;
@@ -241,6 +237,8 @@
             align-items: baseline;
             justify-content: center;
             margin-right: 1vh;
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
         }
 
         .countdown-label-left {
@@ -263,7 +261,6 @@
             font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
             font-size: 3.5vw;
             font-weight: normal;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         }
 
         /* Alineación y comportamiento para Layout A (FALTAN 9 hrs) */
@@ -323,7 +320,6 @@
             font-weight: normal;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
             margin: 0;
             line-height: 1;
         }
@@ -334,7 +330,6 @@
             font-weight: normal;
             line-height: 1;
             margin: 0;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.6);
         }
 
         /* Reloj del partido en medio */
@@ -354,7 +349,6 @@
             font-weight: normal;
             font-size: 4vw;
             z-index: 10;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         }
 
         /* Overlay para el texto/datos del gol en la plantilla */
@@ -386,7 +380,6 @@
             font-size: 2vw;
             font-weight: normal;
             letter-spacing: 0.5px;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             margin: 0;
             line-height: 1.1;
             text-transform: uppercase;
@@ -397,7 +390,6 @@
             font-size: 1.3vw;
             font-weight: normal;
             color: #FFD700;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             margin: 2px 0 0 0;
             line-height: 1.1;
             text-transform: uppercase;
@@ -533,25 +525,12 @@
                 return;
             }
 
-            // Si el partido no ha empezado, rotamos solo entre 0 (Conteo A) y 1 (Conteo B)
-            const savedIndex = localStorage.getItem('alac_template_index');
-            let index = savedIndex !== null ? parseInt(savedIndex) : 0;
-            
-            // Si el índice guardado es mayor o igual a 2, lo reseteamos a 0
-            if (index >= 2) {
-                index = 0;
-            }
-            
-            activeRotationIndex = index;
-            
-            // Incrementar e indexar para la siguiente carga de página (ciclamos entre 0 y 1)
-            const nextIndex = (index + 1) % 2;
-            localStorage.setItem('alac_template_index', nextIndex);
-            console.log(`Consulta actual (Pre-partido) - Índice de conteo: ${activeRotationIndex}. Siguiente consulta usará: ${nextIndex}`);
+            // Empezamos siempre con el Diseño B (la hora)
+            activeRotationIndex = 1;
         }
 
         // Función para actualizar el estado visual de la página
-        function updateDisplayState(partido) {
+        function updateDisplayState(partido, layoutOverride = null) {
             const now = getNow();
             
             // Parsear la fecha y hora del partido ("YYYY-MM-DD HH:mm:ss")
@@ -564,7 +543,7 @@
 
             // Determinar si es conteo en función de la rotación actual o parámetros
             const forceState = getUrlParam('state');
-            let currentLayout = activeRotationIndex;
+            let currentLayout = layoutOverride !== null ? layoutOverride : activeRotationIndex;
             let isCountdown = diffMs > 0;
 
             if (forceState === 'countdown-a' || forceState === 'countdown') {
@@ -611,12 +590,12 @@
                 const local = partido.local;
                 const visitante = partido.visitante;
 
-                const homeFlagUrl = local.bandera_url || local.bandera || local.logo;
-                if (homeFlagUrl) document.getElementById('countdown-home-flag').src = homeFlagUrl;
+                const localFlag = local.bandera_url || local.logo || local.bandera;
+                if (localFlag) document.getElementById('countdown-home-flag').src = localFlag;
                 document.getElementById('countdown-home-name').innerText = local.nombre;
 
-                const awayFlagUrl = visitante.bandera_url || visitante.bandera || visitante.logo;
-                if (awayFlagUrl) document.getElementById('countdown-away-flag').src = awayFlagUrl;
+                const visitorFlag = visitante.bandera_url || visitante.logo || visitante.bandera;
+                if (visitorFlag) document.getElementById('countdown-away-flag').src = visitorFlag;
                 document.getElementById('countdown-away-name').innerText = visitante.nombre;
 
                 // 2. Cargar textos en el pill inferior izquierdo según la rotación
@@ -661,13 +640,13 @@
                 const local = partido.local;
                 const visitante = partido.visitante;
                 
-                const homeLogoUrl = local.bandera_url || local.bandera || local.logo;
-                if (homeLogoUrl) document.getElementById('home-logo').src = homeLogoUrl;
+                const localFlag = local.bandera_url || local.logo || local.bandera;
+                if (localFlag) document.getElementById('home-logo').src = localFlag;
                 document.getElementById('home-name').innerText = getShortName(local.nombre, local.codigo_iso);
                 document.getElementById('home-score').innerText = currentHomeScore;
 
-                const awayLogoUrl = visitante.bandera_url || visitante.bandera || visitante.logo;
-                if (awayLogoUrl) document.getElementById('away-logo').src = awayLogoUrl;
+                const visitorFlag = visitante.bandera_url || visitante.logo || visitante.bandera;
+                if (visitorFlag) document.getElementById('away-logo').src = visitorFlag;
                 document.getElementById('away-name').innerText = getShortName(visitante.nombre, visitante.codigo_iso);
                 document.getElementById('away-score').innerText = currentAwayScore;
 
@@ -746,6 +725,21 @@
             const isCountdown = updateDisplayState(partido);
 
             if (isCountdown) {
+                // A la mitad de la reproducción (3.5s) cambiamos del diseño B (la hora) al diseño A (cuánto falta)
+                const forceState = getUrlParam('state');
+                if (!forceState) {
+                    setTimeout(() => {
+                        const countdownContent = document.getElementById('countdown-content');
+                        if (countdownContent) {
+                            countdownContent.style.opacity = '0';
+                            setTimeout(() => {
+                                updateDisplayState(partido, 0); // Cambiar al Diseño A
+                                countdownContent.style.opacity = '1';
+                            }, 300);
+                        }
+                    }, 3500);
+                }
+
                 // Polling suave de conteo cada 1 minuto
                 startCountdownPolling(fixtureId);
             } else {
