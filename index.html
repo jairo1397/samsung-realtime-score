@@ -754,7 +754,7 @@
                 document.getElementById('home-score').innerText = currentHomeScore;
                 document.getElementById('away-score').innerText = currentAwayScore;
 
-                // Guardar el resultado en localStorage
+                // Guardar el resultado actual en localStorage para futuras comparaciones
                 localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
                 localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
 
@@ -771,68 +771,94 @@
 
         // Función para activar visualmente el gol sincronizado
         function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, partido = null) {
-            console.log(`¡GOL DETECTADO! Sincronizando animación con retraso de ${timeElapsed}ms...`);
+            console.log(`¡GOL DETECTADO! Tiempo transcurrido: ${timeElapsed}ms`);
             
-            // Actualizar variables de estado internas
-            currentHomeScore = newHomeScore;
-            currentAwayScore = newAwayScore;
+            // Verificar si estamos dentro de la ventana válida: 2.5s a 5s
+            const GOAL_WINDOW_START = 2500;  // 2.5 segundos
+            const GOAL_WINDOW_END = 5000;    // 5 segundos
 
-            // Mostrar el goleador en el overlay
-            const golTitle = document.getElementById('gol-title');
-            const golFlag = document.getElementById('gol-flag');
-            
-            if (partido && partido.goles && partido.goles.length > 0) {
-                const ultimoGol = partido.goles[partido.goles.length - 1];
-                const teamShort = getShortName(ultimoGol.equipo, ultimoGol.codigo_iso || ultimoGol.equipo_codigo);
-                
-                // Buscar la bandera correspondiente en base al nombre o código
-                let flagUrl = "";
-                if (partido.local && partido.visitante) {
-                    const equipoLocal = partido.local;
-                    const equipoVisitante = partido.visitante;
+            // Función auxiliar para mostrar la animación
+            const showGoalAnimation = (delay) => {
+                setTimeout(() => {
+                    console.log(`Mostrando animación de gol en ${delay}ms...`);
                     
-                    if (getShortName(equipoLocal.nombre, equipoLocal.codigo_iso) === teamShort || ultimoGol.equipo === equipoLocal.nombre) {
-                        flagUrl = equipoLocal.bandera_url || equipoLocal.logo || equipoLocal.bandera;
-                    } else if (getShortName(equipoVisitante.nombre, equipoVisitante.codigo_iso) === teamShort || ultimoGol.equipo === equipoVisitante.nombre) {
-                        flagUrl = equipoVisitante.bandera_url || equipoVisitante.logo || equipoVisitante.bandera;
+                    // Actualizar variables de estado internas
+                    currentHomeScore = newHomeScore;
+                    currentAwayScore = newAwayScore;
+
+                    // Mostrar el goleador en el overlay
+                    const golTitle = document.getElementById('gol-title');
+                    const golFlag = document.getElementById('gol-flag');
+                    
+                    if (partido && partido.goles && partido.goles.length > 0) {
+                        const ultimoGol = partido.goles[partido.goles.length - 1];
+                        const teamShort = getShortName(ultimoGol.equipo, ultimoGol.codigo_iso || ultimoGol.equipo_codigo);
+                        
+                        // Buscar la bandera correspondiente en base al nombre o código
+                        let flagUrl = "";
+                        if (partido.local && partido.visitante) {
+                            const equipoLocal = partido.local;
+                            const equipoVisitante = partido.visitante;
+                            
+                            if (getShortName(equipoLocal.nombre, equipoLocal.codigo_iso) === teamShort || ultimoGol.equipo === equipoLocal.nombre) {
+                                flagUrl = equipoLocal.bandera_url || equipoLocal.logo || equipoLocal.bandera;
+                            } else if (getShortName(equipoVisitante.nombre, equipoVisitante.codigo_iso) === teamShort || ultimoGol.equipo === equipoVisitante.nombre) {
+                                flagUrl = equipoVisitante.bandera_url || equipoVisitante.logo || equipoVisitante.bandera;
+                            }
+                        }
+
+                        if (flagUrl) {
+                            golFlag.src = flagUrl;
+                            golFlag.style.display = 'block';
+                        } else {
+                            golFlag.style.display = 'none';
+                        }
+
+                        golTitle.innerText = teamShort;
+                    } else {
+                        if (golFlag) golFlag.style.display = 'none';
+                        golTitle.innerText = "¡GOL!";
                     }
-                }
 
-                if (flagUrl) {
-                    golFlag.src = flagUrl;
-                    golFlag.style.display = 'block';
-                } else {
-                    golFlag.style.display = 'none';
-                }
+                    // Reproducir la animación CSS agregando la clase 'is-goal' al contenedor
+                    container.classList.add('is-goal');
 
-                golTitle.innerText = teamShort;
+                    // Actualizar el DOM exactamente a los 3000ms del tiempo global del anuncio
+                    const domUpdateWait = Math.max(0, 3000 - timeElapsed);
+                    setTimeout(() => {
+                        document.getElementById('home-score').innerText = newHomeScore;
+                        document.getElementById('away-score').innerText = newAwayScore;
+                    }, domUpdateWait);
+
+                    // Ocultar el gol exactamente a los 5000ms
+                    const hideWait = Math.max(0, 5000 - timeElapsed);
+                    setTimeout(() => {
+                        container.classList.remove('is-goal');
+                        if (typeof golVideo !== 'undefined' && golVideo && typeof golVideo.pause === 'function') {
+                            golVideo.pause();
+                            golVideo.currentTime = 0;
+                        }
+                    }, hideWait);
+                }, delay);
+            };
+
+            if (timeElapsed < GOAL_WINDOW_START) {
+                // Si llegó antes de los 2.5s, esperar hasta los 2.5s
+                const waitTime = GOAL_WINDOW_START - timeElapsed;
+                console.log(`Gol detectado temprano (${timeElapsed}ms). Esperando ${waitTime}ms para mostrar en 2.5s...`);
+                showGoalAnimation(waitTime);
+            } else if (timeElapsed < GOAL_WINDOW_END) {
+                // Si está dentro de la ventana, mostrar inmediatamente
+                console.log(`Gol dentro de la ventana válida. Mostrando animación inmediatamente.`);
+                showGoalAnimation(0);
             } else {
-                if (golFlag) golFlag.style.display = 'none';
-                golTitle.innerText = "¡GOL!";
-            }
-
-            // Adelantar toda la animación CSS usando un delay negativo igual al tiempo transcurrido
-            container.style.setProperty('--delay', `-${timeElapsed}ms`);
-
-            // Reproducir toda la animación CSS y video agregando la clase 'is-goal' al contenedor
-            container.classList.add('is-goal');
-
-            // Actualizar el DOM exactamente a los 3000ms del tiempo global del anuncio
-            const domUpdateWait = Math.max(0, 3000 - timeElapsed);
-            setTimeout(() => {
+                // Si pasó la ventana (después de 5s), no mostrar animación, solo actualizar scores
+                console.log(`Gol detectado muy tarde (${timeElapsed}ms > 5000ms). No mostrando animación, solo actualizando scores.`);
+                currentHomeScore = newHomeScore;
+                currentAwayScore = newAwayScore;
                 document.getElementById('home-score').innerText = newHomeScore;
                 document.getElementById('away-score').innerText = newAwayScore;
-            }, domUpdateWait);
-
-            // Ocultar el gol exactamente a los 5000ms
-            const hideWait = Math.max(0, 5000 - timeElapsed);
-            setTimeout(() => {
-                container.classList.remove('is-goal');
-                if (typeof golVideo !== 'undefined' && golVideo && typeof golVideo.pause === 'function') {
-                    golVideo.pause();
-                    golVideo.currentTime = 0;
-                }
-            }, hideWait);
+            }
         }
 
         // --- POLLING PARA MODO CONTEO REGRESIVO (Cada 1 minuto) ---
@@ -869,7 +895,7 @@
 
         // --- POLLING PARA MODO MARCADOR (Consulta cada 1 segundo para detectar goles) ---
         function startGoalPolling(fixtureId) {
-            console.log("Iniciando consulta constante para detectar goles...");
+            console.log("Iniciando consulta constante para detectar goles usando localStorage...");
             
             setInterval(async () => {
                 try {
@@ -887,20 +913,31 @@
                         const nuevoHome = parseInt(partido.marcador.local) || 0;
                         const nuevoAway = parseInt(partido.marcador.visitante) || 0;
 
-                        // Si alguno de los puntajes es mayor al que teníamos guardado, ¡hubo un gol en vivo!
-                        if ((nuevoHome > currentHomeScore || nuevoAway > currentAwayScore) && (nuevoHome >= 1 || nuevoAway >= 1)) {
-                            const timeElapsed = Date.now() - pageLoadTime;
+                        // Consultar localStorage para ver los scores anteriores
+                        const savedHomeStr = localStorage.getItem(`alac_home_${fixtureId}`);
+                        const savedAwayStr = localStorage.getItem(`alac_away_${fixtureId}`);
+                        const savedHome = savedHomeStr !== null ? parseInt(savedHomeStr) : null;
+                        const savedAway = savedAwayStr !== null ? parseInt(savedAwayStr) : null;
 
-                            // Si estamos dentro de los primeros 2.5s (2500ms) de mostrar la página, lanzamos la animación
-                            if (timeElapsed <= 2500) {
-                                triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido);
-                                localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
-                                localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
-                            } else {
-                                console.log(`Gol detectado muy tarde (${timeElapsed}ms). Se pospone la animación para la siguiente pasada.`);
-                                currentHomeScore = nuevoHome;
-                                currentAwayScore = nuevoAway;
+                        let hasGoalOccurred = false;
+
+                        // Verificar si hubo cambio (aumento) en alguno de los scores
+                        if (savedHome !== null && savedAway !== null) {
+                            // Si algún score aumentó, significa que hubo gol
+                            if ((nuevoHome > savedHome || nuevoAway > savedAway) && (nuevoHome >= 1 || nuevoAway >= 1)) {
+                                hasGoalOccurred = true;
+                                console.log(`Cambio detectado: Local ${savedHome}->${nuevoHome}, Visitante ${savedAway}->${nuevoAway}`);
                             }
+                        }
+
+                        // Guardar los scores actuales en localStorage
+                        localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
+                        localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
+
+                        // Si hay gol, lanzar animación considerando el tiempo transcurrido
+                        if (hasGoalOccurred) {
+                            const timeElapsed = Date.now() - pageLoadTime;
+                            triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido);
                         }
                     }
                 } catch (err) {
