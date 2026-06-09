@@ -446,13 +446,13 @@
             container.style.opacity = '1';
         };
         
-        // Cuando inicia la animación CSS de gol, esperamos a que llegue al 3.03s del tiempo general del contenido
+        // Cuando inicia la animación CSS de gol, esperamos a que llegue al 2.5s del tiempo general del contenido
         golVideo.addEventListener('animationstart', () => {
             if (typeof golVideo.pause === 'function') {
                 golVideo.pause();
                 golVideo.currentTime = 0;
                 const elapsed = Date.now() - pageLoadTime;
-                const waitTime = Math.max(0, 3030 - elapsed);
+                const waitTime = Math.max(0, 2500 - elapsed);
                 setTimeout(() => {
                     golVideo.play().catch(e => console.error("Error al reproducir el video:", e));
                 }, waitTime);
@@ -817,12 +817,22 @@
             // Reproducir toda la animación CSS y video agregando la clase 'is-goal' al contenedor
             container.classList.add('is-goal');
 
-            // Actualizar el DOM exactamente a los 3500ms del tiempo global del anuncio
-            const domUpdateWait = Math.max(0, 3500 - timeElapsed);
+            // Actualizar el DOM exactamente a los 3000ms del tiempo global del anuncio
+            const domUpdateWait = Math.max(0, 3000 - timeElapsed);
             setTimeout(() => {
                 document.getElementById('home-score').innerText = newHomeScore;
                 document.getElementById('away-score').innerText = newAwayScore;
             }, domUpdateWait);
+
+            // Ocultar el gol exactamente a los 5000ms
+            const hideWait = Math.max(0, 5000 - timeElapsed);
+            setTimeout(() => {
+                container.classList.remove('is-goal');
+                if (typeof golVideo !== 'undefined' && golVideo && typeof golVideo.pause === 'function') {
+                    golVideo.pause();
+                    golVideo.currentTime = 0;
+                }
+            }, hideWait);
         }
 
         // --- POLLING PARA MODO CONTEO REGRESIVO (Cada 1 minuto) ---
@@ -881,8 +891,8 @@
                         if ((nuevoHome > currentHomeScore || nuevoAway > currentAwayScore) && (nuevoHome >= 1 || nuevoAway >= 1)) {
                             const timeElapsed = Date.now() - pageLoadTime;
 
-                            // Si estamos dentro de los primeros 3.03s (3030ms) de mostrar la página, lanzamos la animación
-                            if (timeElapsed <= 3030) {
+                            // Si estamos dentro de los primeros 2.5s (2500ms) de mostrar la página, lanzamos la animación
+                            if (timeElapsed <= 2500) {
                                 triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido);
                                 localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
                                 localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
