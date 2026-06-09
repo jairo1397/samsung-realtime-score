@@ -438,7 +438,7 @@
         const pageLoadTime = Date.now();
 
         const container = document.querySelector('.container');
-        const golOverlay = document.querySelector('.gol-overlay');
+        const golVideo = document.querySelector('.gol-overlay');
         const bgTemplate = document.getElementById('bg-template');
         
         bgTemplate.onload = () => {
@@ -446,9 +446,26 @@
             container.style.opacity = '1';
         };
         
+        // Cuando inicia la animación CSS de gol, esperamos a que llegue al 3.03s del tiempo general del contenido
+        golVideo.addEventListener('animationstart', () => {
+            if (typeof golVideo.pause === 'function') {
+                golVideo.pause();
+                golVideo.currentTime = 0;
+                const elapsed = Date.now() - pageLoadTime;
+                const waitTime = Math.max(0, 3030 - elapsed);
+                setTimeout(() => {
+                    golVideo.play().catch(e => console.error("Error al reproducir el video:", e));
+                }, waitTime);
+            }
+        });
+
         // Cuando termina la animación de gol, reseteamos las clases para que esté listo para el próximo
-        golOverlay.addEventListener('animationend', () => {
+        golVideo.addEventListener('animationend', () => {
             container.classList.remove('is-goal');
+            if (typeof golVideo.pause === 'function') {
+                golVideo.pause();
+                golVideo.currentTime = 0;
+            }
         });
 
         // --- CONEXIÓN AL NUEVO API ---
@@ -756,6 +773,7 @@
         function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, partido = null) {
             console.log(`¡GOL DETECTADO! Sincronizando animación con retraso de ${timeElapsed}ms...`);
             
+            // Actualizar variables de estado internas
             currentHomeScore = newHomeScore;
             currentAwayScore = newAwayScore;
 
@@ -793,14 +811,18 @@
                 golTitle.innerText = "¡GOL!";
             }
 
-            // Mostrar la pantalla de gol estática y actualizar el marcador a la mitad (3 segundos)
-            const delayToMidpoint = Math.max(0, 3000 - timeElapsed);
-            
+            // Adelantar toda la animación CSS usando un delay negativo igual al tiempo transcurrido
+            container.style.setProperty('--delay', `-${timeElapsed}ms`);
+
+            // Reproducir toda la animación CSS y video agregando la clase 'is-goal' al contenedor
+            container.classList.add('is-goal');
+
+            // Actualizar el DOM exactamente a los 3500ms del tiempo global del anuncio
+            const domUpdateWait = Math.max(0, 3500 - timeElapsed);
             setTimeout(() => {
-                container.classList.add('is-goal');
                 document.getElementById('home-score').innerText = newHomeScore;
                 document.getElementById('away-score').innerText = newAwayScore;
-            }, delayToMidpoint);
+            }, domUpdateWait);
         }
 
         // --- POLLING PARA MODO CONTEO REGRESIVO (Cada 1 minuto) ---
