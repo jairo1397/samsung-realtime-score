@@ -364,15 +364,6 @@
             text-transform: uppercase;
         }
 
-        .gol-scorer {
-            font-family: 'Samsung SS Head Medium', 'Outfit', sans-serif;
-            font-size: 1.3vw;
-            font-weight: normal;
-            color: #FFD700;
-            margin: 2px 0 0 0;
-            line-height: 1.1;
-            text-transform: uppercase;
-        }
     </style>
 </head>
 <body>
@@ -430,7 +421,6 @@
                 <img class="gol-flag" id="gol-flag" src="" alt="Bandera">
                 <div class="gol-title" id="gol-title">¡GOL!</div>
             </div>
-            <div class="gol-scorer" id="gol-scorer"></div>
         </div>
 
         <!-- Capas de transición circulares (Abre el hueco desde el centro) -->
@@ -771,7 +761,6 @@
 
             // Mostrar el goleador en el overlay
             const golTitle = document.getElementById('gol-title');
-            const golScorer = document.getElementById('gol-scorer');
             const golFlag = document.getElementById('gol-flag');
             
             if (partido && partido.goles && partido.goles.length > 0) {
@@ -799,27 +788,19 @@
                 }
 
                 golTitle.innerText = teamShort;
-                
-                if (ultimoGol.jugador) {
-                    const minStr = ultimoGol.minuto_texto || `${ultimoGol.minuto}'`;
-                    golScorer.innerText = `${ultimoGol.jugador.toUpperCase()} (${minStr})`;
-                } else {
-                    golScorer.innerText = "";
-                }
             } else {
                 if (golFlag) golFlag.style.display = 'none';
                 golTitle.innerText = "¡GOL!";
-                golScorer.innerText = "";
             }
 
-            // Mostrar la pantalla de gol estática
-            container.classList.add('is-goal');
-
-            // Actualizar el DOM con un ligero retraso para que cambie cuando la pantalla de gol ya esté visible
+            // Mostrar la pantalla de gol estática y actualizar el marcador a la mitad (3 segundos)
+            const delayToMidpoint = Math.max(0, 3000 - timeElapsed);
+            
             setTimeout(() => {
+                container.classList.add('is-goal');
                 document.getElementById('home-score').innerText = newHomeScore;
                 document.getElementById('away-score').innerText = newAwayScore;
-            }, 500);
+            }, delayToMidpoint);
         }
 
         // --- POLLING PARA MODO CONTEO REGRESIVO (Cada 1 minuto) ---
