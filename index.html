@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samsung - Fútbol en Vivo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800;900&family=Inter:wght@400;700;800&display=swap');
+
+        @font-face {
+            font-family: 'Samsung SS Body Light';
+            src: url('./assets/fonts/Samsung SS Body_OTF/SamsungSSBody-Light.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Samsung SS Body Regular';
+            src: url('./assets/fonts/Samsung SS Body_OTF/SamsungSSBody-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Samsung SS Body Bold';
+            src: url('./assets/fonts/Samsung SS Body_OTF/SamsungSSBody-Bold.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Samsung SS Head Light';
+            src: url('./assets/fonts/Samsung SS Head_OTF/SamsungSSHead-Light.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Samsung SS Head Regular';
+            src: url('./assets/fonts/Samsung SS Head_OTF/SamsungSSHead-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Samsung SS Head Medium';
+            src: url('./assets/fonts/Samsung SS Head_OTF/SamsungSSHead-Medium.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Samsung SS Head Bold';
+            src: url('./assets/fonts/Samsung SS Head_OTF/SamsungSSHead-Bold.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        /* Contenedor principal */
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        /* Fondo de la plantilla */
+        .bg-template {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            z-index: 0;
+        }
+
+        /* Capa del gol (imagen) */
+        .gol-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            opacity: 0; 
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* Contenedor de las capas de transición */
+        .transition-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 25; /* Por encima del gol */
+            overflow: hidden; 
+            pointer-events: none;
+        }
+
+        /* Base para las formas circulares */
+        .wipe-element {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            width: 0;
+            height: 0;
+        }
+
+        /* CELESTE */
+        .celeste-solid { background-color: #00BFFF; }
+        .celeste-hole { background-color: transparent; box-shadow: 0 0 0 300vmax #00BFFF; opacity: 0; }
+
+        /* AZUL */
+        .azul-solid { background-color: #0000CD; }
+        .azul-hole { background-color: transparent; box-shadow: 0 0 0 300vmax #0000CD; opacity: 0; }
+
+        /* Clases activas cuando hay gol */
+        .is-goal .gol-overlay { animation: showGoal 7s linear forwards; animation-delay: var(--delay, 0ms); }
+        .is-goal .celeste-solid { animation: solidCeleste 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
+        .is-goal .celeste-hole { animation: holeCeleste 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
+        .is-goal .azul-solid { animation: solidAzul 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
+        .is-goal .azul-hole { animation: holeAzul 7s ease-in-out forwards; animation-delay: var(--delay, 0ms); }
+
+        /* Keyframes del gol */
+        @keyframes showGoal {
+            0% { opacity: 0; }
+            43.28% { opacity: 0; } /* 3.03s (3030 / 7000) */
+            50.00% { opacity: 1; } /* Termina el fade in suave */
+            88.14% { opacity: 1; } /* 6.17s (6170 / 7000) Empieza la transición */
+            92.14% { opacity: 0; } /* Se desvanece mientras la transición azul lo cubre */
+            100% { opacity: 0; }
+        }
+
+        /* KEYFRAMES CELESTE */
+        @keyframes solidCeleste {
+            0%, 88.13% { width: 0; height: 0; opacity: 1; } /* Inicia en 6.17s */
+            90.71%, 94.27% { width: 300vmax; height: 300vmax; opacity: 1; }
+            94.28%, 100% { width: 300vmax; height: 300vmax; opacity: 0; }
+        }
+        @keyframes holeCeleste {
+            0%, 94.27% { width: 0; height: 0; opacity: 0; }
+            94.28% { width: 0; height: 0; opacity: 1; }
+            98.57%, 100% { width: 300vmax; height: 300vmax; opacity: 1; }
+        }
+
+        /* KEYFRAMES AZUL */
+        @keyframes solidAzul {
+            0%, 89.56% { width: 0; height: 0; opacity: 1; }
+            92.14% { width: 300vmax; height: 300vmax; opacity: 1; }
+            92.15%, 100% { width: 300vmax; height: 300vmax; opacity: 0; }
+        }
+        @keyframes holeAzul {
+            0%, 92.14% { width: 0; height: 0; opacity: 0; }
+            92.15% { width: 0; height: 0; opacity: 1; } 
+            96.42%, 100% { width: 300vmax; height: 300vmax; opacity: 1; } 
+        }
+
+        /* Contenedor de equipos en la esquina superior izquierda (Modo Conteo) */
+        .top-left-teams {
+            position: absolute;
+            left: 6.5%;
+            top: 10.4%;
+            display: none;
+            flex-direction: column;
+            align-items: flex-start;
+            z-index: 10;
+            font-family: 'Samsung SS Head Regular', 'Outfit', sans-serif;
+            color: #ffffff;
+        }
+
+        .team-row {
+            display: flex;
+            align-items: center;
+            gap: 1.2vw;
+        }
+
+        .team-flag {
+            width: 5.5vw;
+            height: 3.6vw;
+            object-fit: cover;
+            border-radius: 3px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+
+        .team-name-text {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 4.8vw;
+            font-weight: normal;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+        }
+
+        .vs-row {
+            font-family: 'Samsung SS Head Light', 'Outfit', sans-serif;
+            font-size: 2.5vw;
+            font-weight: normal;
+            margin-left: 9vw; /* Alineado para sentarse bajo el espacio flag-name */
+            text-transform: lowercase;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            line-height: 1;
+            margin-top: -0.3vh;
+            margin-bottom: -0.3vh;
+        }
+
+        .visitor-row {
+            margin-left: 5.5vw; /* Desplazado para que el nombre de la visita quede bajo el vs */
+        }
+
+        /* Estilos del Conteo Regresivo Pill */
+        .countdown-pill {
+            position: absolute;
+            left: 0%;
+            top: 69.27%;
+            width: 34.375%;
+            height: 22.395%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-family: 'Samsung SS Head Regular', 'Outfit', sans-serif;
+            z-index: 10;
+            box-sizing: border-box;
+            padding-left: 2%;
+        }
+
+        .countdown-content {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            margin-right: 1vh;
+        }
+
+        .countdown-label-left {
+            font-family: 'Samsung SS Head medium', 'Outfit', sans-serif;
+            font-size: 3.5vw;
+            font-weight: normal;
+            margin-right: 1.2vw;
+            align-self: center;
+        }
+
+        .countdown-number {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 8vw;
+            font-weight: normal;
+            line-height: 0.8;
+            margin-right: 0;
+        }
+
+        .countdown-label-right {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 3.5vw;
+            font-weight: normal;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+        }
+
+        /* Alineación y comportamiento para Layout A (FALTAN 9 hrs) */
+        .countdown-pill.layout-a .countdown-content {
+            align-items: baseline;
+        }
+
+        /* Alineación y comportamiento para Layout B (Hoy 4:00 PM) */
+        .countdown-pill.layout-b .countdown-content {
+            align-items: baseline;
+        }
+        .countdown-pill.layout-b .countdown-label-left {
+            align-self: flex-start;
+            line-height: 1;
+        }
+        .countdown-pill.layout-b .countdown-label-right {
+            align-self: flex-end;
+            line-height: 1;
+        }
+
+        /* Estilos de las tarjetas del Score */
+        .team-card {
+            position: absolute;
+            top: 16.667%;
+            width: 18.229%;
+            height: 66.667%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            color: #ffffff;
+            font-family: 'Samsung SS Head Regular', 'Outfit', sans-serif;
+            padding: 1vh 0;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .team-card-left {
+            left: 21.875%;
+        }
+
+        .team-card-right {
+            left: 59.896%;
+        }
+
+        .team-logo {
+            width: 7.5vw;
+            height: 7.5vw;
+            max-width: 70px;
+            max-height: 70px;
+            object-fit: contain;
+        }
+
+        .team-name {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 5vw;
+            font-weight: normal;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+            margin: 0;
+            line-height: 1;
+        }
+
+        .team-score {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 11vw;
+            font-weight: normal;
+            line-height: 1;
+            margin: 0;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.6);
+        }
+
+        /* Reloj del partido en medio */
+        .clock-pill-overlay {
+            position: absolute;
+            left: 43.75%;
+            top: 21.875%;
+            width: 12.5%;
+            height: 10.417%;
+            display: none;
+            align-items: center;
+            justify-content: flex-end; 
+            padding-right: 1.5vw;
+            box-sizing: border-box;
+            color: #ffffff;
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-weight: normal;
+            font-size: 4vw;
+            z-index: 10;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+        }
+
+        /* Overlay para el texto/datos del gol en la plantilla */
+        .gol-pill-overlay {
+            position: absolute;
+            left: 37.5%;
+            top: 64.583%;
+            width: 24.479%;
+            height: 16.146%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-family: 'Samsung SS Head Regular', 'Outfit', sans-serif;
+            text-align: center;
+            opacity: 0;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        .is-goal .gol-pill-overlay {
+            animation: showGoal 7s linear forwards;
+            animation-delay: var(--delay, 0ms);
+        }
+
+        .gol-title {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 2vw;
+            font-weight: normal;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            margin: 0;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .gol-scorer {
+            font-family: 'Samsung SS Head Medium', 'Outfit', sans-serif;
+            font-size: 1.3vw;
+            font-weight: normal;
+            color: #FFD700;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            margin: 2px 0 0 0;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Plantilla de fondo dinámica -->
+        <img class="bg-template" id="bg-template" src="" alt="Fondo" style="visibility: hidden;">
+
+        <!-- Overlay de Equipos (Top-Left) para el modo Conteo -->
+        <div class="top-left-teams" id="top-left-teams">
+            <div class="team-row local-row">
+                <img class="team-flag" id="countdown-home-flag" src="" alt="">
+                <span class="team-name-text" id="countdown-home-name">LOCAL</span>
+            </div>
+            <div class="vs-row">vs</div>
+            <div class="team-row visitor-row">
+                <span class="team-name-text" id="countdown-away-name">VISITA</span>
+                <img class="team-flag" id="countdown-away-flag" src="" alt="">
+            </div>
+        </div>
+
+        <!-- Overlay del Conteo Regresivo -->
+        <div class="countdown-pill" id="countdown-pill">
+            <div class="countdown-content" id="countdown-content">
+                <span class="countdown-label-left" id="countdown-lbl-left">FALTAN</span>
+                <span class="countdown-number" id="countdown-hours">--</span>
+                <span class="countdown-label-right" id="countdown-lbl-right">hrs</span>
+            </div>
+        </div>
+
+        <!-- Tarjetas del Marcador en Vivo -->
+        <div class="team-card team-card-left" id="home-card">
+            <span class="team-name" id="home-name">LOCAL</span>
+            <img class="team-logo" id="home-logo" src="" alt="Home">
+            <span class="team-score" id="home-score">0</span>
+        </div>
+
+        <div class="team-card team-card-right" id="away-card">
+            <span class="team-name" id="away-name">VISITA</span>
+            <img class="team-logo" id="away-logo" src="" alt="Away">
+            <span class="team-score" id="away-score">0</span>
+        </div>
+
+        <!-- Tiempo de juego (reloj pill) -->
+        <div class="clock-pill-overlay" id="clock-overlay">
+            <span id="match-time">0'</span>
+        </div>
+
+        <!-- Plantilla del gol superpuesta con animación CSS -->
+        <img class="gol-overlay" src="./assets/Plantilla_gol_samsung.jpg" alt="Gol Overlay">
+
+        <!-- Overlay para el texto/datos del gol en la plantilla -->
+        <div class="gol-pill-overlay" id="gol-pill-overlay">
+            <div class="gol-title" id="gol-title">¡GOL!</div>
+            <div class="gol-scorer" id="gol-scorer"></div>
+        </div>
+
+        <!-- Capas de transición circulares (Abre el hueco desde el centro) -->
+        <div class="transition-container">
+            <div class="wipe-element celeste-solid"></div>
+            <div class="wipe-element celeste-hole"></div>
+            <div class="wipe-element azul-solid"></div>
+            <div class="wipe-element azul-hole"></div>
+        </div>
+        
+    </div>
+
+    <script>
+        // Guardamos el momento exacto en el que el HTML se empezó a mostrar
+        const pageLoadTime = Date.now();
+
+        const container = document.querySelector('.container');
+        const golOverlay = document.querySelector('.gol-overlay');
+        const bgTemplate = document.getElementById('bg-template');
+        
+        bgTemplate.onload = () => {
+            bgTemplate.style.visibility = 'visible';
+            container.style.opacity = '1';
+        };
+        
+        // Cuando termina la animación de gol, reseteamos las clases para que esté listo para el próximo
+        golOverlay.addEventListener('animationend', () => {
+            container.classList.remove('is-goal');
+        });
+
+        // --- CONEXIÓN AL NUEVO API ---
+        const API_URL = 'https://alacapipollamundialista.alacoohperu.pe/api/public';
+
+        // Variables de estado
+        let currentHomeScore = 0;
+        let currentAwayScore = 0;
+        let isCountdownActive = false;
+        let activeRotationIndex = 0;
+
+        // Función auxiliar para abreviar el nombre del equipo
+        const getShortName = (name, codigo_iso) => {
+            if (codigo_iso && codigo_iso.trim()) return codigo_iso.trim().toUpperCase();
+            return name ? name.substring(0, 3).toUpperCase() : "";
+        };
+
+        // Obtener parámetros de la URL para depuración y testeo dinámico
+        function getUrlParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Obtener la hora actual del sistema o la simulada
+        function getNow() {
+            const mockDateParam = getUrlParam('mockDate');
+            if (mockDateParam) {
+                return new Date(mockDateParam);
+            }
+            return new Date();
+        }
+
+        // Inicializar rotación de plantilla para cada nueva consulta/carga de página
+        function initTemplateRotation(isMatchStarted) {
+            const forceState = getUrlParam('state');
+            if (forceState) {
+                if (forceState === 'countdown-a' || forceState === 'countdown') activeRotationIndex = 0;
+                else if (forceState === 'countdown-b') activeRotationIndex = 1;
+                else if (forceState === 'score') activeRotationIndex = 2;
+                return;
+            }
+
+            if (isMatchStarted) {
+                // Si el partido ya empezó, forzamos siempre la plantilla de score (índice 2)
+                activeRotationIndex = 2;
+                return;
+            }
+
+            // Si el partido no ha empezado, rotamos solo entre 0 (Conteo A) y 1 (Conteo B)
+            const savedIndex = localStorage.getItem('alac_template_index');
+            let index = savedIndex !== null ? parseInt(savedIndex) : 0;
+            
+            // Si el índice guardado es mayor o igual a 2, lo reseteamos a 0
+            if (index >= 2) {
+                index = 0;
+            }
+            
+            activeRotationIndex = index;
+            
+            // Incrementar e indexar para la siguiente carga de página (ciclamos entre 0 y 1)
+            const nextIndex = (index + 1) % 2;
+            localStorage.setItem('alac_template_index', nextIndex);
+            console.log(`Consulta actual (Pre-partido) - Índice de conteo: ${activeRotationIndex}. Siguiente consulta usará: ${nextIndex}`);
+        }
+
+        // Función para actualizar el estado visual de la página
+        function updateDisplayState(partido) {
+            const now = getNow();
+            
+            // Parsear la fecha y hora del partido ("YYYY-MM-DD HH:mm:ss")
+            const matchDateStr = partido.fecha_hora;
+            const parts = matchDateStr.split(/[- :]/);
+            const matchDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+
+            const diffMs = matchDate - now;
+            const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+
+            // Determinar si es conteo en función de la rotación actual o parámetros
+            const forceState = getUrlParam('state');
+            let currentLayout = activeRotationIndex;
+            let isCountdown = diffMs > 0;
+
+            if (forceState === 'countdown-a' || forceState === 'countdown') {
+                isCountdown = true;
+                currentLayout = 0;
+            } else if (forceState === 'countdown-b') {
+                isCountdown = true;
+                currentLayout = 1;
+            } else if (forceState === 'score') {
+                isCountdown = false;
+                currentLayout = 2;
+            } else {
+                // Rotación por defecto
+                if (currentLayout === 0 || currentLayout === 1) {
+                    isCountdown = true;
+                } else {
+                    isCountdown = false;
+                }
+            }
+
+            isCountdownActive = isCountdown;
+
+            const bgTemplate = document.getElementById('bg-template');
+            
+            if (isCountdown) {
+                // --- MODO CONTEO REGRESIVO (Plantilla Conteo) ---
+                bgTemplate.src = './assets/Plantilla_conteo regresivo_samsung.jpg';
+                
+                document.getElementById('top-left-teams').style.display = 'flex';
+                const pillElement = document.getElementById('countdown-pill');
+                pillElement.style.display = 'flex';
+                if (currentLayout === 0) {
+                    pillElement.classList.add('layout-a');
+                    pillElement.classList.remove('layout-b');
+                } else {
+                    pillElement.classList.add('layout-b');
+                    pillElement.classList.remove('layout-a');
+                }
+                document.getElementById('home-card').style.display = 'none';
+                document.getElementById('away-card').style.display = 'none';
+                document.getElementById('clock-overlay').style.display = 'none';
+
+                // 1. Cargar equipos en la esquina superior izquierda
+                const local = partido.local;
+                const visitante = partido.visitante;
+
+                const homeFlagUrl = local.bandera_url || local.bandera || local.logo;
+                if (homeFlagUrl) document.getElementById('countdown-home-flag').src = homeFlagUrl;
+                document.getElementById('countdown-home-name').innerText = local.nombre;
+
+                const awayFlagUrl = visitante.bandera_url || visitante.bandera || visitante.logo;
+                if (awayFlagUrl) document.getElementById('countdown-away-flag').src = awayFlagUrl;
+                document.getElementById('countdown-away-name').innerText = visitante.nombre;
+
+                // 2. Cargar textos en el pill inferior izquierdo según la rotación
+                const lblLeft = document.getElementById('countdown-lbl-left');
+                const lblHours = document.getElementById('countdown-hours');
+                const lblRight = document.getElementById('countdown-lbl-right');
+
+                if (currentLayout === 0) {
+                    // --- DISEÑO A: FALTAN X hrs ---
+                    lblLeft.innerText = "FALTAN";
+                    lblHours.innerText = Math.max(0, diffHours);
+                    lblRight.innerText = "hrs";
+                } else {
+                    // --- DISEÑO B: Hoy H:MM PM/AM ---
+                    let dayLabel = "Hoy";
+                    if (matchDate.toDateString() !== now.toDateString()) {
+                        const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                        dayLabel = `${matchDate.getDate()} ${months[matchDate.getMonth()]}`;
+                    }
+                    lblLeft.innerText = dayLabel;
+
+                    let hours = matchDate.getHours();
+                    const minutes = matchDate.getMinutes();
+                    const ampm = hours >= 12 ? 'PM' : 'AM';
+                    hours = hours % 12;
+                    hours = hours ? hours : 12;
+                    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+
+                    lblHours.innerText = `${hours}:${minutesStr}`;
+                    lblRight.innerText = ampm;
+                }
+            } else {
+                // --- MODO MARCADOR EN VIVO (Plantilla Score) ---
+                bgTemplate.src = './assets/Plantilla_score_samsung.jpg';
+
+                document.getElementById('top-left-teams').style.display = 'none';
+                document.getElementById('countdown-pill').style.display = 'none';
+                document.getElementById('home-card').style.display = 'flex';
+                document.getElementById('away-card').style.display = 'flex';
+                document.getElementById('clock-overlay').style.display = 'flex';
+
+                const local = partido.local;
+                const visitante = partido.visitante;
+                
+                const homeLogoUrl = local.bandera_url || local.bandera || local.logo;
+                if (homeLogoUrl) document.getElementById('home-logo').src = homeLogoUrl;
+                document.getElementById('home-name').innerText = getShortName(local.nombre, local.codigo_iso);
+                document.getElementById('home-score').innerText = currentHomeScore;
+
+                const awayLogoUrl = visitante.bandera_url || visitante.bandera || visitante.logo;
+                if (awayLogoUrl) document.getElementById('away-logo').src = awayLogoUrl;
+                document.getElementById('away-name').innerText = getShortName(visitante.nombre, visitante.codigo_iso);
+                document.getElementById('away-score').innerText = currentAwayScore;
+
+                const tiempo = partido.tiempo;
+                document.getElementById('match-time').innerText = tiempo && tiempo.texto ? tiempo.texto : "0'";
+            }
+            
+            return isCountdown;
+        }
+
+        // Función inicial para cargar datos del partido
+        async function fetchInitialFixtureData(fixtureId) {
+            let partido = null;
+            try {
+                const response = await fetch(`${API_URL}/partidos?id=${fixtureId}`, { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                if (data && data.partidos && data.partidos.length > 0) {
+                    partido = data.partidos[0];
+                    // Guardar en cache el partido completo exitoso
+                    localStorage.setItem(`alac_partido_${fixtureId}`, JSON.stringify(partido));
+                }
+            } catch (error) {
+                console.warn(`Error al consultar API para fixture ${fixtureId}, intentando cargar caché local:`, error);
+                const cachedStr = localStorage.getItem(`alac_partido_${fixtureId}`);
+                if (cachedStr) {
+                    try {
+                        partido = JSON.parse(cachedStr);
+                        console.log("Cargado partido desde caché local debido a falla del API.");
+                    } catch(e) {
+                        console.error("Error al parsear el partido de caché:", e);
+                    }
+                }
+            }
+
+            // Si no se obtuvo de la API ni de la caché, usar el partido fallback por defecto
+            if (!partido) {
+                partido = {
+                    fecha_hora: "2026-06-11 19:00:00",
+                    local: { 
+                        nombre: "Ecuador", 
+                        codigo_iso: "ECU", 
+                        bandera_url: "https://flagcdn.com/w80/ec.png",
+                        bandera: "https://flagcdn.com/w80/ec.png" 
+                    },
+                    visitante: { 
+                        nombre: "Alemania", 
+                        codigo_iso: "GER", 
+                        bandera_url: "https://flagcdn.com/w80/de.png",
+                        bandera: "https://flagcdn.com/w80/de.png" 
+                    },
+                    marcador: { local: 0, visitante: 0 },
+                    tiempo: { texto: "0'" },
+                    goles: []
+                };
+                console.log("No hay datos del API ni de caché. Usando partido demo de fallback.");
+            }
+
+            // Calcular si el partido ya empezó
+            const now = getNow();
+            const matchDateStr = partido.fecha_hora;
+            const parts = matchDateStr.split(/[- :]/);
+            const matchDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+            const diffMs = matchDate - now;
+            const isMatchStarted = diffMs <= 0;
+
+            // Inicializar la rotación sabiendo si el partido empezó
+            initTemplateRotation(isMatchStarted);
+
+            const marcador = partido.marcador;
+            const nuevoHome = parseInt(marcador.local) || 0;
+            const nuevoAway = parseInt(marcador.visitante) || 0;
+
+            // Decidir qué estado mostrar
+            const isCountdown = updateDisplayState(partido);
+
+            if (isCountdown) {
+                // Polling suave de conteo cada 1 minuto
+                startCountdownPolling(fixtureId);
+            } else {
+                // Revisar memoria (localStorage) para ver cómo quedó el partido la última vez
+                const savedHomeStr = localStorage.getItem(`alac_home_${fixtureId}`);
+                const savedAwayStr = localStorage.getItem(`alac_away_${fixtureId}`);
+                const savedHome = savedHomeStr !== null ? parseInt(savedHomeStr) : null;
+                const savedAway = savedAwayStr !== null ? parseInt(savedAwayStr) : null;
+
+                let isHiddenGoal = false;
+
+                // Si teníamos un marcador anterior guardado y el nuevo es MAYOR, hubo gol mientras no estábamos
+                if (savedHome !== null && savedAway !== null && (nuevoHome > savedHome || nuevoAway > savedAway)) {
+                    isHiddenGoal = true;
+                    currentHomeScore = savedHome;
+                    currentAwayScore = savedAway;
+                } else {
+                    currentHomeScore = nuevoHome;
+                    currentAwayScore = nuevoAway;
+                }
+
+                // Actualizar marcadores iniciales en DOM
+                document.getElementById('home-score').innerText = currentHomeScore;
+                document.getElementById('away-score').innerText = currentAwayScore;
+
+                // Guardar el resultado en localStorage
+                localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
+                localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
+
+                // Si detectamos un gol offline, calculamos el tiempo y lo disparamos
+                if (isHiddenGoal) {
+                    const elapsed = Date.now() - pageLoadTime;
+                    triggerGoalAnimation(nuevoHome, nuevoAway, elapsed, partido.goles);
+                }
+                
+                // Iniciar el chequeo de goles cada segundo
+                startGoalPolling(fixtureId);
+            }
+        }
+
+        // Función para activar visualmente el gol sincronizado
+        function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, goles = []) {
+            console.log(`¡GOL DETECTADO! Sincronizando animación con retraso de ${timeElapsed}ms...`);
+            
+            currentHomeScore = newHomeScore;
+            currentAwayScore = newAwayScore;
+
+            // Mostrar el goleador en el overlay
+            const golTitle = document.getElementById('gol-title');
+            const golScorer = document.getElementById('gol-scorer');
+            
+            if (goles && goles.length > 0) {
+                const ultimoGol = goles[goles.length - 1];
+                const teamShort = getShortName(ultimoGol.equipo, ultimoGol.codigo_iso || ultimoGol.equipo_codigo);
+                golTitle.innerText = `¡GOL DE ${teamShort}!`;
+                
+                if (ultimoGol.jugador) {
+                    const minStr = ultimoGol.minuto_texto || `${ultimoGol.minuto}'`;
+                    golScorer.innerText = `${ultimoGol.jugador.toUpperCase()} (${minStr})`;
+                } else {
+                    golScorer.innerText = "";
+                }
+            } else {
+                golTitle.innerText = "¡GOL!";
+                golScorer.innerText = "";
+            }
+
+            // Adelantar toda la animación CSS usando un delay negativo igual al tiempo transcurrido
+            container.style.setProperty('--delay', `-${timeElapsed}ms`);
+
+            // Reproducir toda la animación CSS agregando la clase 'is-goal' al contenedor
+            container.classList.add('is-goal');
+
+            // Actualizar el DOM exactamente a los 3500ms del tiempo global del anuncio
+            const domUpdateWait = Math.max(0, 3500 - timeElapsed);
+            setTimeout(() => {
+                document.getElementById('home-score').innerText = newHomeScore;
+                document.getElementById('away-score').innerText = newAwayScore;
+            }, domUpdateWait);
+        }
+
+        // --- POLLING PARA MODO CONTEO REGRESIVO (Cada 1 minuto) ---
+        function startCountdownPolling(fixtureId) {
+            console.log("Iniciando polling de conteo regresivo...");
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/partidos?id=${fixtureId}`, { cache: "no-store" });
+                    if (!response.ok) throw new Error(`HTTP status: ${response.status}`);
+                    const result = await response.json();
+                    
+                    if (result && result.partidos && result.partidos.length > 0) {
+                        const partido = result.partidos[0];
+                        localStorage.setItem(`alac_partido_${fixtureId}`, JSON.stringify(partido));
+                        const isCountdown = updateDisplayState(partido);
+                        
+                        // Si ya no es modo conteo, refrescamos para iniciar modo marcador y polling de goles
+                        if (!isCountdown) {
+                            window.location.reload();
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Error en polling de conteo (usando caché o manteniendo estado):", err);
+                    const cachedStr = localStorage.getItem(`alac_partido_${fixtureId}`);
+                    if (cachedStr) {
+                        try {
+                            const partido = JSON.parse(cachedStr);
+                            updateDisplayState(partido);
+                        } catch(e) {}
+                    }
+                }
+            }, 60000);
+        }
+
+        // --- POLLING PARA MODO MARCADOR (Consulta cada 1 segundo para detectar goles) ---
+        function startGoalPolling(fixtureId) {
+            console.log("Iniciando consulta constante para detectar goles...");
+            
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_URL}/partidos?id=${fixtureId}`, { cache: "no-store" });
+                    if (!response.ok) throw new Error(`HTTP status: ${response.status}`);
+                    const result = await response.json();
+                    
+                    if (result && result.partidos && result.partidos.length > 0) {
+                        const partido = result.partidos[0];
+                        localStorage.setItem(`alac_partido_${fixtureId}`, JSON.stringify(partido));
+                        
+                        const isCountdown = updateDisplayState(partido);
+                        if (isCountdown) return;
+
+                        const nuevoHome = parseInt(partido.marcador.local) || 0;
+                        const nuevoAway = parseInt(partido.marcador.visitante) || 0;
+
+                        // Si alguno de los puntajes es mayor al que teníamos guardado, ¡hubo un gol en vivo!
+                        if (nuevoHome > currentHomeScore || nuevoAway > currentAwayScore) {
+                            const timeElapsed = Date.now() - pageLoadTime;
+
+                            // Si estamos dentro de los primeros 3.03s (3030ms) de mostrar la página, lanzamos la animación
+                            if (timeElapsed <= 3030) {
+                                triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido.goles);
+                                localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
+                                localStorage.setItem(`alac_away_${fixtureId}`, nuevoAway);
+                            } else {
+                                console.log(`Gol detectado muy tarde (${timeElapsed}ms). Se pospone la animación para la siguiente pasada.`);
+                                currentHomeScore = nuevoHome;
+                                currentAwayScore = nuevoAway;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Error consultando endpoint de gol (ignorando falla temporal):", err);
+                }
+            }, 1000);
+        }
+
+        // Obtener el ID de la URL y arrancar
+        const urlParams = new URLSearchParams(window.location.search);
+        let fixtureId = urlParams.get('id');
+        if (!fixtureId) {
+            console.log("No se proporcionó ID en la URL. Usando el ID 9 por defecto.");
+            fixtureId = 9;
+        }
+        
+        fetchInitialFixtureData(fixtureId);
+
+        // Fallback de seguridad: si la plantilla no carga en 2 segundos, se muestra el contenedor de todas formas
+        setTimeout(() => {
+            bgTemplate.style.visibility = 'visible';
+            container.style.opacity = '1';
+        }, 2000);
+    </script>
+</body>
+</html>
