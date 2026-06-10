@@ -348,15 +348,15 @@
         }
 
         .gol-flag {
-            width: 8vw;
-            height: 5.5vw;
+            width: 7vw;
+            height: 4.5vw;
             object-fit: cover;
             display: none;
         }
 
         .gol-title {
             font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
-            font-size: 7vw;
+            font-size: 6vw;
             font-weight: normal;
             letter-spacing: 0.5px;
             margin: 0;
@@ -739,12 +739,20 @@
                 const savedAway = savedAwayStr !== null ? parseInt(savedAwayStr) : null;
 
                 let isHiddenGoal = false;
+                let scorerTeam = null;
 
                 // Si teníamos un marcador anterior guardado y el nuevo es MAYOR, hubo gol mientras no estábamos
                 if (savedHome !== null && savedAway !== null && (nuevoHome > savedHome || nuevoAway > savedAway) && (nuevoHome >= 1 || nuevoAway >= 1)) {
                     isHiddenGoal = true;
                     currentHomeScore = savedHome;
                     currentAwayScore = savedAway;
+                    
+                    // Determinar cuál equipo metió gol
+                    if (nuevoHome > savedHome) {
+                        scorerTeam = partido.local;
+                    } else if (nuevoAway > savedAway) {
+                        scorerTeam = partido.visitante;
+                    }
                 } else {
                     currentHomeScore = nuevoHome;
                     currentAwayScore = nuevoAway;
@@ -761,7 +769,7 @@
                 // Si detectamos un gol offline, calculamos el tiempo y lo disparamos
                 if (isHiddenGoal) {
                     const elapsed = Date.now() - pageLoadTime;
-                    triggerGoalAnimation(nuevoHome, nuevoAway, elapsed, partido);
+                    triggerGoalAnimation(nuevoHome, nuevoAway, elapsed, partido, scorerTeam);
                 }
                 
                 // Iniciar el chequeo de goles cada segundo
@@ -770,7 +778,7 @@
         }
 
         // Función para activar visualmente el gol sincronizado
-        function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, partido = null) {
+        function triggerGoalAnimation(newHomeScore, newAwayScore, timeElapsed = 0, partido = null, scorerTeam = null) {
             console.log(`¡GOL DETECTADO! Tiempo transcurrido: ${timeElapsed}ms`);
             
             // Verificar si estamos dentro de la ventana válida: 2.5s a 5s
@@ -790,12 +798,19 @@
                     const golTitle = document.getElementById('gol-title');
                     const golFlag = document.getElementById('gol-flag');
                     
-                    if (partido && partido.goles && partido.goles.length > 0) {
+                    let teamShort = "¡GOL!";
+                    let flagUrl = "";
+
+                    // Si tenemos información del equipo que anotó
+                    if (scorerTeam) {
+                        teamShort = getShortName(scorerTeam.nombre, scorerTeam.codigo_iso);
+                        flagUrl = scorerTeam.bandera_url || scorerTeam.logo || scorerTeam.bandera;
+                    } else if (partido && partido.goles && partido.goles.length > 0) {
+                        // Fallback: usar el último gol del partido
                         const ultimoGol = partido.goles[partido.goles.length - 1];
-                        const teamShort = getShortName(ultimoGol.equipo, ultimoGol.codigo_iso || ultimoGol.equipo_codigo);
+                        teamShort = getShortName(ultimoGol.equipo, ultimoGol.codigo_iso || ultimoGol.equipo_codigo);
                         
-                        // Buscar la bandera correspondiente en base al nombre o código
-                        let flagUrl = "";
+                        // Buscar la bandera correspondiente
                         if (partido.local && partido.visitante) {
                             const equipoLocal = partido.local;
                             const equipoVisitante = partido.visitante;
@@ -806,19 +821,17 @@
                                 flagUrl = equipoVisitante.bandera_url || equipoVisitante.logo || equipoVisitante.bandera;
                             }
                         }
-
-                        if (flagUrl) {
-                            golFlag.src = flagUrl;
-                            golFlag.style.display = 'block';
-                        } else {
-                            golFlag.style.display = 'none';
-                        }
-
-                        golTitle.innerText = teamShort;
-                    } else {
-                        if (golFlag) golFlag.style.display = 'none';
-                        golTitle.innerText = "¡GOL!";
                     }
+
+                    // Mostrar bandera si existe
+                    if (flagUrl) {
+                        golFlag.src = flagUrl;
+                        golFlag.style.display = 'block';
+                    } else {
+                        golFlag.style.display = 'none';
+                    }
+
+                    golTitle.innerText = teamShort;
 
                     // Reproducir la animación CSS agregando la clase 'is-goal' al contenedor
                     container.classList.add('is-goal');
@@ -920,12 +933,23 @@
                         const savedAway = savedAwayStr !== null ? parseInt(savedAwayStr) : null;
 
                         let hasGoalOccurred = false;
+                        let scorerTeam = null;
 
                         // Verificar si hubo cambio (aumento) en alguno de los scores
                         if (savedHome !== null && savedAway !== null) {
                             // Si algún score aumentó, significa que hubo gol
                             if ((nuevoHome > savedHome || nuevoAway > savedAway) && (nuevoHome >= 1 || nuevoAway >= 1)) {
                                 hasGoalOccurred = true;
+                                
+                                // Determinar cuál equipo metió gol
+                                if (nuevoHome > savedHome) {
+                                    scorerTeam = partido.local;
+                                    console.log(`Gol del equipo local: ${partido.local.nombre}`);
+                                } else if (nuevoAway > savedAway) {
+                                    scorerTeam = partido.visitante;
+                                    console.log(`Gol del equipo visitante: ${partido.visitante.nombre}`);
+                                }
+                                
                                 console.log(`Cambio detectado: Local ${savedHome}->${nuevoHome}, Visitante ${savedAway}->${nuevoAway}`);
                             }
                         }
@@ -937,7 +961,7 @@
                         // Si hay gol, lanzar animación considerando el tiempo transcurrido
                         if (hasGoalOccurred) {
                             const timeElapsed = Date.now() - pageLoadTime;
-                            triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido);
+                            triggerGoalAnimation(nuevoHome, nuevoAway, timeElapsed, partido, scorerTeam);
                         }
                     }
                 } catch (err) {
