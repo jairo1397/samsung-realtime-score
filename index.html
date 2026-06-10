@@ -169,9 +169,9 @@
         }
 
         .vs-row {
-            font-family: 'Samsung SS Head Light', 'Outfit', sans-serif;
+            font-family: 'Samsung SS Head medium', 'Outfit', sans-serif;
             font-size: 2.5vw;
-            font-weight: normal;
+            font-weight: bold;
             margin-left: 9vw; /* Alineado para sentarse bajo el espacio flag-name */
             text-transform: lowercase;
             line-height: 1;
@@ -235,6 +235,14 @@
         .countdown-pill.layout-a .countdown-content {
             align-items: baseline;
         }
+        .countdown-pill.layout-a .countdown-label-left {
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 3.5vw;
+        }
+        .countdown-pill.layout-a .countdown-label-right {
+            font-family: 'Samsung SS Head Medium', 'Outfit', sans-serif;
+            font-size: 3.5vw;
+        }
 
         /* Alineación y comportamiento para Layout B (Hoy 4:00 PM) */
         .countdown-pill.layout-b .countdown-content {
@@ -243,10 +251,14 @@
         .countdown-pill.layout-b .countdown-label-left {
             align-self: flex-start;
             line-height: 1;
+            font-family: 'Samsung SS Head Medium', 'Outfit', sans-serif;
+            font-size: 3.5vw;
         }
         .countdown-pill.layout-b .countdown-label-right {
             align-self: flex-end;
             line-height: 1;
+            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-size: 3.5vw;
         }
 
         /* Estilos de las tarjetas del Score */
@@ -275,15 +287,15 @@
         }
 
         .team-logo {
-            width: 7.5vw;
-            height: 7.5vw;
-            max-width: 70px;
-            max-height: 70px;
+            width: 14vw;
+            height: 10vw;
+            max-width: 120px;
+            max-height: 120px;
             object-fit: contain;
         }
 
         .team-name {
-            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-family: 'Samsung SS Head medium', 'Outfit', sans-serif;
             font-size: 5vw;
             font-weight: normal;
             letter-spacing: 1.5px;
@@ -313,7 +325,7 @@
             padding-right: 1.5vw;
             box-sizing: border-box;
             color: #ffffff;
-            font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
+            font-family: 'Samsung SS Head medium', 'Outfit', sans-serif;
             font-weight: normal;
             font-size: 4vw;
             z-index: 10;
@@ -483,6 +495,11 @@
             return name ? name.substring(0, 3).toUpperCase() : "";
         };
 
+        // Función auxiliar para formatear score con dos dígitos
+        const formatScore = (score) => {
+            return String(score).padStart(2, '0');
+        };
+
         // Obtener parámetros de la URL para depuración y testeo dinámico
         function getUrlParam(param) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -632,12 +649,12 @@
                 const localFlag = local.bandera_url || local.logo || local.bandera;
                 if (localFlag) document.getElementById('home-logo').src = localFlag;
                 document.getElementById('home-name').innerText = getShortName(local.nombre, local.codigo_iso);
-                document.getElementById('home-score').innerText = currentHomeScore;
+                document.getElementById('home-score').innerText = formatScore(currentHomeScore);
 
                 const visitorFlag = visitante.bandera_url || visitante.logo || visitante.bandera;
                 if (visitorFlag) document.getElementById('away-logo').src = visitorFlag;
                 document.getElementById('away-name').innerText = getShortName(visitante.nombre, visitante.codigo_iso);
-                document.getElementById('away-score').innerText = currentAwayScore;
+                document.getElementById('away-score').innerText = formatScore(currentAwayScore);
 
                 const tiempo = partido.tiempo;
                 document.getElementById('match-time').innerText = tiempo && tiempo.texto ? tiempo.texto : "0'";
@@ -759,8 +776,8 @@
                 }
 
                 // Actualizar marcadores iniciales en DOM
-                document.getElementById('home-score').innerText = currentHomeScore;
-                document.getElementById('away-score').innerText = currentAwayScore;
+                document.getElementById('home-score').innerText = formatScore(currentHomeScore);
+                document.getElementById('away-score').innerText = formatScore(currentAwayScore);
 
                 // Guardar el resultado actual en localStorage para futuras comparaciones
                 localStorage.setItem(`alac_home_${fixtureId}`, nuevoHome);
@@ -839,8 +856,8 @@
                     // Actualizar el DOM exactamente a los 3000ms del tiempo global del anuncio
                     const domUpdateWait = Math.max(0, 3000 - timeElapsed);
                     setTimeout(() => {
-                        document.getElementById('home-score').innerText = newHomeScore;
-                        document.getElementById('away-score').innerText = newAwayScore;
+                        document.getElementById('home-score').innerText = formatScore(newHomeScore);
+                        document.getElementById('away-score').innerText = formatScore(newAwayScore);
                     }, domUpdateWait);
 
                     // Ocultar el gol exactamente a los 5000ms
@@ -869,8 +886,8 @@
                 console.log(`Gol detectado muy tarde (${timeElapsed}ms > 5000ms). No mostrando animación, solo actualizando scores.`);
                 currentHomeScore = newHomeScore;
                 currentAwayScore = newAwayScore;
-                document.getElementById('home-score').innerText = newHomeScore;
-                document.getElementById('away-score').innerText = newAwayScore;
+                document.getElementById('home-score').innerText = formatScore(newHomeScore);
+                document.getElementById('away-score').innerText = formatScore(newAwayScore);
             }
         }
 
