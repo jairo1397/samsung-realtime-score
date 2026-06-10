@@ -164,6 +164,7 @@
         }
 
         .team-name-text {
+            text-align:end;
             font-family: 'Samsung SS Head Bold', 'Outfit', sans-serif;
             font-size: 5.8vw;
             font-weight: normal;
@@ -181,7 +182,8 @@
         }
 
         .visitor-row {
-            margin-left: 3.5vw; /* Desplazado para que el nombre de la visita quede bajo el vs */
+            margin-left: clamp(0.5vw, 3.5vw, 8vw); /* Responsive margin que se ajusta si no entra el nombre */
+            flex-wrap: wrap;
         }
 
         /* Estilos del Conteo Regresivo Pill */
