@@ -544,7 +544,7 @@
             const now = getNow();
             
             // Parsear la fecha y hora del partido ("YYYY-MM-DD HH:mm:ss")
-            const matchDateStr = partido.fecha_hora;
+            const matchDateStr = partido.fecha_hora_servidor;
             const parts = matchDateStr.split(/[- :]/);
             const matchDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
 
